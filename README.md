@@ -3,11 +3,13 @@ pip install matplotlib
 pip install tqdm
 pip install rtree
 pip install maup
+pip install networkx
 
 district_fix.py -> adding district geometry (GeoJSON boundaries) to district data details
 [USE CASE 1] geo_data_agg.py -> integrating district, precinct, and US Census data
 [USE CASE 2] neighbors.py -> computing precinct neighbors 
 [USE CASE 6] district_measures.py -> computing district details
+[USE CASE 7] adjacency.py -> computing adjacency graph: node = precincts, edges/links = are neighbors
 
 Resources:
 # https://dataverse.harvard.edu/dataverse/electionscience (Precinct)
