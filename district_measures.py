@@ -5,10 +5,10 @@ import pandas as pd
 
 gdf = gpd.read_file(input("Enter the district details file name: "))
 
-
-# clean up data
+# Select columns that we need
 numeric_columns = ['ID', 'Total Pop', 'Dem', 'Rep', 'Oth', 'White', 'Minority', 'Hispanic', 'Black', 'Asian', 'Native', 'Pacific']
 
+# Clean up data
 for column in numeric_columns:
     gdf[column] = pd.to_numeric(gdf[column], errors='coerce').fillna(0).astype(float)
 
@@ -19,9 +19,10 @@ gdf = gdf.reset_index(drop=True)
 gdf = gdf.rename(columns={'ID': 'District'})
 gdf['District'] = gdf.index + 1
 
-# total pop from entire data file
+# Total population from entire data file of all districts
 total_pop = gdf['Total Pop'].sum()
 
+# Create dictionary of all columns and continuously update the values for each key
 totals = {
     'Democratic Voters': 0,
     'Republican Voters': 0,
@@ -35,6 +36,8 @@ totals = {
     'Pacific': 0
 }
 
+# Calculating the actual amount of the specified group for each row, since they were in %
+# Add to their corresponding key-value pair
 for i, row in gdf.iterrows():
     pop = row['Total Pop']
 
@@ -49,6 +52,7 @@ for i, row in gdf.iterrows():
     totals['Native'] += row['Native'] * pop
     totals['Pacific'] += row['Pacific'] * pop
 
+# Convert back to percentage once we have all totals
 percent_democratic_voters = round(totals['Democratic Voters'] / total_pop * 100, 2)
 percent_republican_voters = round(totals['Republican Voters'] / total_pop * 100, 2)
 percent_other_voters = round(totals['Other Voters'] / total_pop * 100, 2)
@@ -62,6 +66,7 @@ percent_pacific = round(totals['Pacific'] / total_pop * 100, 2)
 
 total_pop = (int)(total_pop)
 
+# New DF
 statewide_measures = pd.DataFrame({
     "Total Population": [total_pop],
     "Total Democratic Voters %": [percent_democratic_voters],
@@ -78,6 +83,7 @@ statewide_measures = pd.DataFrame({
 
 print(statewide_measures)
 
+# Export as CSV
 output_file_name = input("Enter the output file name: ") + ".csv"
 statewide_measures.to_csv(output_file_name, index=False)
 print("Created output CSV file:", output_file_name)

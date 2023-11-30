@@ -16,3 +16,4 @@ Resources:
 # https://redistrictingdatahub.org (Precinct)
 # https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html (District Geometry)
 # https://davesredistricting.org/ (District Measures)
+# https://www2.census.gov/geo/tiger/TIGER2022/STATE/ (State boundaries)

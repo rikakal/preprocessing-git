@@ -1,15 +1,12 @@
 import geopandas as gpd
 import pandas as pd
 import maup
-import networkx as nx
-import json
-import matplotlib.pyplot as plt
 
-# precinct file
+# Precinct shapefile
 precinct_input = input("Enter the precincts file name: ")
 precincts = gpd.read_file(precinct_input)
 
-# district shapefile
+# District shapefile
 districts_input = input("Enter the districts file name: ")
 districts = gpd.read_file(districts_input)
 
@@ -23,27 +20,25 @@ if district_col_name == 'NAMELSAD20':
 else:
     districts['District_Num'] = districts[district_col_name].astype(int)
 
+# Ensure the maup.assign grabs the correct index of the corresponding district during assignment
 districts = districts.sort_values(by='District_Num', ascending=True)
 districts = districts.reset_index(drop=True)
+
+# Ensure both precincts GDF and districts GDF have same CRS
 districts = districts.to_crs(precincts.crs)
-print(districts)
 
 district_to_precinct = maup.assign(precincts, districts) # Assign districts to precincts
 precincts['district'] = district_to_precinct
 precincts['district'] = pd.to_numeric(precincts["district"])
 precincts['district'] = precincts['district'] + 1 # need to do this because the assignment takes the index
 
-print(precincts)
-
+# Convert CRS 
 crs_type = '4269'
 crs_str = f'epsg:{crs_type}'
 precincts = precincts.to_crs(crs_str)
 
+# Export as shapefile and GeoJSON
 output_shapefile = input("Enter output file name: ")
 precincts.to_file(output_shapefile)
-print("Successfully created output file.")
-
-output_shapefile = input("Enter output file name: ")
 precincts.to_file(output_shapefile + ".geojson", driver='GeoJSON')
-print("Successfully created output file.")
-
+print("Successfully created output files as shapefiles and GeoJSON.")
