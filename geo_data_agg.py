@@ -2,43 +2,41 @@ import geopandas as gpd
 import pandas as pd
 import maup
 
-# Precinct shapefile
 precinct_input = input("Enter the precincts file name: ")
-precincts = gpd.read_file(precinct_input)
+precinct = gpd.read_file(precinct_input)
 
-# District shapefile
-districts_input = input("Enter the districts file name: ")
-districts = gpd.read_file(districts_input)
+district_input = input("Enter the districts file name: ")
+district = gpd.read_file(district_input)
 
-print("Columns in congressional districts:", districts.columns)
-district_col_name = input("Enter the district column name: ")
+print("Columns in congressional districts:", district.columns)
+district_col = input("Enter the district column name: ")
 
-# Cleaning and sorting District data
-districts = districts[districts[district_col_name] != "Congressional Districts not defined"]
-if district_col_name == 'NAMELSAD20':
-    districts['District_Num'] = districts['NAMELSAD20'].str.extract(r'(\d+)').astype(int)
+# Cleaning and sorting district data
+district = district.loc[
+    district[district_col] != "Congressional Districts not defined"
+]
+col = 'NAMELSAD20'
+if district_col == col:
+    district['District #'] = district[col].str.extract(r'(\d+)').astype(int)
 else:
-    districts['District_Num'] = districts[district_col_name].astype(int)
+    district['District #'] = district[district_col].astype(int)
 
-# Ensure the maup.assign grabs the correct index of the corresponding district during assignment
-districts = districts.sort_values(by='District_Num', ascending=True)
-districts = districts.reset_index(drop=True)
+# Ensure maup.assign gets the correct district index during assignment
+district = district.sort_values(by='District_Num', ascending=True)
+district = district.reset_index(drop=True)
 
-# Ensure both precincts GDF and districts GDF have same CRS
-districts = districts.to_crs(precincts.crs)
+district = district.to_crs(precinct.crs)
 
-district_to_precinct = maup.assign(precincts, districts) # Assign districts to precincts
-precincts['district'] = district_to_precinct
-precincts['district'] = pd.to_numeric(precincts["district"])
-precincts['district'] = precincts['district'] + 1 # need to do this because the assignment takes the index
+district_to_precinct = maup.assign(precinct, district)
+precinct['district'] = district_to_precinct
+precinct['district'] = pd.to_numeric(precinct["district"])
+precinct['district'] = precinct['district'] + 1
 
-# Convert CRS 
 crs_type = '4269'
 crs_str = f'epsg:{crs_type}'
-precincts = precincts.to_crs(crs_str)
+precinct = precinct.to_crs(crs_str)
 
-# Export as shapefile and GeoJSON
 output_shapefile = input("Enter output file name: ")
-precincts.to_file(output_shapefile)
-precincts.to_file(output_shapefile + ".geojson", driver='GeoJSON')
+precinct.to_file(output_shapefile)
+precinct.to_file(output_shapefile + ".geojson", driver='GeoJSON')
 print("Successfully created output files as shapefiles and GeoJSON.")
