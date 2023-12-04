@@ -19,5 +19,15 @@ Resources:
 # https://www2.census.gov/geo/tiger/TIGER2022/STATE/ (State boundaries)
 
 Notes:
-use case 2 Column dictionary for race/vap, which are block groups
+Use Case 2 Column dictionary for race/vap, which are block groups
 https://www2.census.gov/programs-surveys/decennial/2020/technical-documentation/complete-tech-docs/summary-file/2020Census_PL94_171Redistricting_StatesTechDoc_English.pdf
+
+To process data, start with neighbors.py and store output in processed/precinct_map
+- Precinct and Block Group data in data/precinct
+
+To map districts onto precincts, run district_map.py and store output in processed/district_map
+- Distict data in data/district
+- Use the precinct file already processed in processed/precinct_map
+
+To find adjacencies, run adjacency.py and store output in processed/adjacency
+- Use the file already processed in processed/district_map

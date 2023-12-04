@@ -11,7 +11,6 @@ district = gpd.read_file(district_input)
 print("Columns in congressional districts:", district.columns)
 district_col = input("Enter the district column name: ")
 
-# Cleaning and sorting district data
 district = district.loc[
     district[district_col] != "Congressional Districts not defined"
 ]
@@ -20,8 +19,6 @@ if district_col == col:
     district['District_Num'] = district[col].str.extract(r'(\d+)').astype(int)
 else:
     district['District_Num'] = district[district_col].astype(int)
-
-# Ensure maup.assign gets the correct district index during assignment
 district = district.sort_values(by='District_Num', ascending=True)
 district = district.reset_index(drop=True)
 

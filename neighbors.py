@@ -18,11 +18,6 @@ def are_neighbors(precinct1, precinct2, distance=60.96):
             return True
     return False
 
-# def find_boundary(precinct1, precinct2):
-#     len = precinct1.intersection(precinct2).length
-#     return round(len, 8) # round to 8 decimals
-
-# Function to find neigbors of each precinct
 def find_neighbors(p, distance=60.96):
     spatial_i = p.sindex
 
@@ -43,26 +38,37 @@ def find_neighbors(p, distance=60.96):
             if perim:
                 neighbor_list.append(nearby_row[0])
 
+        neighbor_list.sort()
         p.at[i, 'NEIGHBORS'] = ', '.join(map(str, neighbor_list))
 
+    return p
+
+def clean_neighbors(p):
     crs_type = '4269'
     crs_str = f'epsg:{crs_type}'
-    p = p.to_crs(crs_str) 
+    p = p.to_crs(crs_str)
 
-    # for i, row in tqdm(p.iterrows(), total=p.shape[0], desc="Boundaries"):
-    #     geo = row['geometry']
-    #     if row['NEIGHBORS']:
-    #         n_edit = list(map(float, row['NEIGHBORS'].split(',')))
-    #         n_list = list(map(int, n_edit))
-    #         shared_bound = []
-    #         for neighbor_index in n_list:
-    #             neighbor_row = p.iloc[neighbor_index]
-    #             bound = find_boundary(geo, neighbor_row['geometry'])
-    #             shared_bound.append(bound)
+    for i, row in tqdm(p.iterrows(), total=p.shape[0], desc="Cleaning"):
+        if row['NEIGHBORS']:
+            geo = row['geometry']
+            n_list = [int(float(neighbor)) for neighbor in row['NEIGHBORS'].split(',')]
+            n_clean_list = []
 
-    #     p.at[i, 'SHARED_BND'] = ', '.join(map(str, shared_bound))
+            for neighbor in n_list:
+                length = geo.intersection(p.loc[int(neighbor)]['geometry']).length
+                if length != 0:
+                    n_clean_list.append(neighbor)
 
+            if n_clean_list:
+                p.at[i, 'NEIGHBORS'] = ','.join(map(str, n_clean_list))
+            else:
+                p.at[i, 'NEIGHBORS'] = ''
     return p
+
+state_code = input("Enter state (MI/NY/PA): ")
+if state_code.upper() not in ["MI", "NY", "PA"]:
+    print("Wrong input. Exiting.")
+    exit()
 
 file_precinct = input("Enter Precinct file name: ")
 file_block_group = input("Enter Block Group file name: ")
@@ -94,10 +100,9 @@ precinct_concat = gpd.GeoDataFrame(concat_df, geometry='geometry')
 end_time = time.time()
 print("Completed in ", end_time - start_time, " seconds")
 
-precinct_concat['id'] = range(0, len(precinct_concat))
+precinct_concat['id'] = range(0, len(precinct_concat)) 
 print("Finding neighbors for each precinct...")
 precinct_concat['NEIGHBORS'] = ''
-#precinct_concat['SHARED_BND'] = ''
 start_time = time.time()
 precincts_gdf = find_neighbors(precinct_concat)
 precincts_gdf = precincts_gdf.fillna(0)
@@ -111,22 +116,24 @@ columns_mapping = {
     'P0020002': 'HISP_POP', 
     'P0020005': 'WHITE_POP', 
     'P0020006': 'BLACK_POP',
+    'P0020007': 'NATIVE_POP',
     'P0020008': 'ASIAN_POP',
+    'P0020009': 'PACIF_POP',
+    'P0020010': 'OTHER_POP',
     'P0020011': '2MORE_POP',
     'P0040001': 'TOTAL_VAP', 
     'P0040002': 'HISP_VAP', 
     'P0040005': 'WHITE_VAP', 
     'P0040006': 'BLACK_VAP',
+    'P0040007': 'NATIVE_VAP',
     'P0040008': 'ASIAN_VAP',
+    'P0040009': 'PACIF_VAP',
+    'P0040010': 'OTHER_VAP',
     'P0040011': '2MORE_VAP',
     'G20PREDBID': 'Democrat',
     'G20PRERTRU': 'Republican'
 }
 precincts_gdf.rename(columns=columns_mapping, inplace=True)
-# sd = precincts_gdf.columns[precincts_gdf.columns.str.contains('G20USSD')][0]
-# sr = precincts_gdf.columns[precincts_gdf.columns.str.contains('G20USSR')][0]
-# precincts_gdf = precincts_gdf.rename(columns={sd:'S_Democrat'})
-# precincts_gdf = precincts_gdf.rename(columns={sr:'S_Republic'})
 columns_drop = [col for col in precincts_gdf.columns 
                 if col.startswith('P002') or col.startswith('P004')
                 or col.startswith('G20') or col == 'STATEFP' 
@@ -135,16 +142,20 @@ precincts_gdf.drop(columns=columns_drop, inplace=True)
 end_time = time.time()
 print("Completed in ", end_time - start_time, " seconds")
 
-print("Removing island precincts...")
+print("Removing island precincts and cleaning...")
 start_time = time.time()
+if state_code.upper() != 'PA':
+    precincts_gdf = clean_neighbors(precincts_gdf)
 precincts_gdf.dropna(subset=['NEIGHBORS'], inplace=True)
 precincts_gdf['id'] = range(0, len(precincts_gdf))
 precincts_gdf['NEIGHBORS'] = precincts_gdf['NEIGHBORS'].astype(str).apply(
-        lambda x: x.replace('.0', '') if x else x
-    )
-print(precincts_gdf)
+        lambda x: x.replace('.0', '') if x else x)
 end_time = time.time()
 print("Completed in ", end_time - start_time, " seconds\n")
+
+crs_type = '3857'
+crs_str = f'epsg:{crs_type}'
+precinct = precinct.to_crs(crs_str)
 
 output_shapefile = input("Enter output file name: ")
 precincts_gdf.to_file(output_shapefile)
