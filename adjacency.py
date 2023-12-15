@@ -33,17 +33,17 @@ precincts['NEIGHBORS'] = precincts['NEIGHBORS'].apply(
     if x else []
 )
 
-if state_code.upper() == 'PA':
-    precincts['geometry'] = precincts['geometry'].apply(
-        lambda geom: geom.buffer(0) if not geom.is_valid else geom)
-    precincts['geometry_2d'] = precincts['geometry'].apply(flatten_geom)
-    precincts = precincts.drop(columns=['geometry'])
-    precincts = precincts.rename(columns={'geometry_2d': 'geometry'})
-    precincts = precincts.set_geometry('geometry')
+# if state_code.upper() == 'PA':
+#     precincts['geometry'] = precincts['geometry'].apply(
+#         lambda geom: geom.buffer(0) if not geom.is_valid else geom)
+#     precincts['geometry_2d'] = precincts['geometry'].apply(flatten_geom)
+#     precincts = precincts.drop(columns=['geometry'])
+#     precincts = precincts.rename(columns={'geometry_2d': 'geometry'})
+#     precincts = precincts.set_geometry('geometry')
 
-    crs_type = '4269'
-    crs_str = f'epsg:{crs_type}'
-    precincts = precincts.to_crs(crs_str)
+#     crs_type = '4269'
+#     crs_str = f'epsg:{crs_type}'
+#     precincts = precincts.to_crs(crs_str)
 
 adjacency_list = []
 for _, row in precincts.iterrows():
@@ -55,7 +55,7 @@ for _, row in precincts.iterrows():
             'id': neighbor
         }
         for neighbor in row['NEIGHBORS']
-        if g.intersection(precincts.loc[neighbor]['geometry']).length > 0
+        #if g.intersection(precincts.loc[neighbor]['geometry']).length > 0
     ]
     adjacency_list.append(neighbors_list if row['NEIGHBORS'] else [])
 
