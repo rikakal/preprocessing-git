@@ -1,24 +1,16 @@
 import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon, mapping
+from shapely.affinity import affine_transform
+from shapely.ops import transform
+from shapely.affinity import scale
 import json
-
-
-def flatten_geom(geom_3d):
-    if isinstance(geom_3d, Polygon):
-        return Polygon([(x, y) for x, y, z in geom_3d.exterior.coords])
-    elif isinstance(geom_3d, MultiPolygon):
-        return MultiPolygon([Polygon(
-            [(x, y) for x, y, z in poly.exterior.coords])
-            for poly in geom_3d.geoms])
-    else:
-        return None
-
 
 state_code = input('Enter state (MI/NY/PA): ')
 if state_code.upper() not in ['MI', 'NY', 'PA']:
     print('Wrong input. Exiting.')
     exit()
-
+def round_coordinates(x, y, z=None):
+    return round(x, 4), round(y, 4)
 precinct_input = input('Enter file name: ')
 precincts = gpd.read_file(precinct_input)
 precincts = precincts.rename(columns={'district': 'CD_2020'})
@@ -32,18 +24,6 @@ precincts['NEIGHBORS'] = precincts['NEIGHBORS'].apply(
                for neighbor in x.split(',')]
     if x else []
 )
-
-# if state_code.upper() == 'PA':
-#     precincts['geometry'] = precincts['geometry'].apply(
-#         lambda geom: geom.buffer(0) if not geom.is_valid else geom)
-#     precincts['geometry_2d'] = precincts['geometry'].apply(flatten_geom)
-#     precincts = precincts.drop(columns=['geometry'])
-#     precincts = precincts.rename(columns={'geometry_2d': 'geometry'})
-#     precincts = precincts.set_geometry('geometry')
-
-#     crs_type = '4269'
-#     crs_str = f'epsg:{crs_type}'
-#     precincts = precincts.to_crs(crs_str)
 
 adjacency_list = []
 for _, row in precincts.iterrows():
@@ -62,7 +42,7 @@ for _, row in precincts.iterrows():
 nodes_list = []
 for i, row in precincts.iterrows():
     area = row['geometry'].area
-    geo = row['geometry']
+    geo = transform(round_coordinates, row['geometry'])
 
     if row['geometry'].intersects(state_geo):
         intersection_geometry = row['geometry'].intersection(state_geo)
@@ -73,7 +53,8 @@ for i, row in precincts.iterrows():
             'boundary_perim': boundary_length,
             'area': area,
             'geometry': geo,
-            **row.drop(['NEIGHBORS', 'geometry']).to_dict()
+            **row.drop(['NEIGHBORS', 'geometry', 'WHITE_VAP', 'NATIVE_VAP', 
+                        'ASIAN_VAP', 'PACIF_VAP', 'OTHER_VAP', '2MORE_VAP']).to_dict()
         }
     else:
         node_data = {
@@ -81,7 +62,8 @@ for i, row in precincts.iterrows():
             'boundary_node': False,
             'area': area,
             'geometry': geo,
-            **row.drop(['NEIGHBORS', 'geometry']).to_dict()
+            **row.drop(['NEIGHBORS', 'geometry', 'WHITE_VAP', 'NATIVE_VAP', 
+                        'ASIAN_VAP', 'PACIF_VAP', 'OTHER_VAP', '2MORE_VAP']).to_dict()
         }
 
     nodes_list.append(node_data)
